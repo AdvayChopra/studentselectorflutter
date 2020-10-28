@@ -4,8 +4,10 @@ import 'data/user.dart' as globals;
 import 'data/event_helper.dart';
 import 'main.dart';
 
+//Creates a Stateful Widget OrganisedScreen
 class SubscribedTo extends StatefulWidget {
   @override
+  //seperate state object instantiated to store the mutable state
   _SubscribedScreenState createState() => _SubscribedScreenState();
 }
 
@@ -20,8 +22,20 @@ class _SubscribedScreenState extends State<SubscribedTo> {
     initialize();
     super.initState();
   }
+  
+  //Asynchronous method which awaits to get Subscribed Events
+  //Future represents the result of an asynchronous operation
+  Future initialize() async {
+    events = await helper.getSubscribed(globals.User.userID);
+    //notifies the widget that the state is changing
+    setState(() {
+      eventsCount = events.length;
+      events = events;
+    });
+  }
 
   @override
+  //Initialise the state of the Stateful Widget
   Widget build(BuildContext context) {
     bool isSmall = false;
     if (MediaQuery.of(context).size.width < 700) {
@@ -35,6 +49,7 @@ class _SubscribedScreenState extends State<SubscribedTo> {
               padding: EdgeInsets.all(20.0), 
               child: (isSmall) ? Icon(Icons.home) : Text('Home')),
               onTap: () {
+                //on tap of back button navigate to home page
               Navigator.push(context, 
                 MaterialPageRoute(builder: (context) => HomePage())
               );
@@ -53,6 +68,7 @@ class _SubscribedScreenState extends State<SubscribedTo> {
         ),
         Padding(
           padding: EdgeInsets.all(20),
+          //depending on the screen size display a list or a table
           child:  (isSmall) ? EventsList(events, true) : EventsTable(events, true)
         ),
 
@@ -60,13 +76,6 @@ class _SubscribedScreenState extends State<SubscribedTo> {
       
     );
   }
-
-  Future initialize() async {
-   
-    events = await helper.getSubscribed(globals.User.userID);
-    setState(() {
-      eventsCount = events.length;
-      events = events;
-    });
-  }
+  
+  
 }

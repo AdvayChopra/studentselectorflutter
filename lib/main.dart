@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:studentselectorflutter/create_event.dart';
+import 'package:studentselectorflutter/createuser_screen.dart';
 import 'package:studentselectorflutter/login_screen.dart';
 import 'package:studentselectorflutter/organised_screen.dart';
 import 'package:studentselectorflutter/subscribedTo.dart';
@@ -7,12 +8,17 @@ import 'package:studentselectorflutter/ui.dart';
 import './data/event_helper.dart';
 import 'data/user.dart' as globals;
 import 'subscribedTo.dart';
-import 'package:http/http.dart' as http;
 
+/// main method is called when the application starts
 void main() => runApp(StudentSelectorApp());
 
+/// The first class that is instantiated by the main method
+/// builds the app using a constellation of other widgets
 class StudentSelectorApp extends StatelessWidget {
   @override
+
+  ///override the build method of the Stateless Widget class
+  ///with description of how to display StudentSelectorApp instance
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Student Selector',
@@ -23,8 +29,12 @@ class StudentSelectorApp extends StatelessWidget {
   }
 }
 
+///Instantiates the HomePage of the student selector App
+///Extended from StatefulWidget as the state will change according
+///to response from the backend webservices.
 class HomePage extends StatefulWidget {
   @override
+  //seperate state object instantiated to store the mutable state
   _HomePageState createState() => _HomePageState();
 }
 
@@ -34,12 +44,24 @@ class _HomePageState extends State<HomePage> {
   int eventsCount;
 
   @override
+  //Initialise the state of the Stateful Widget
   void initState() {
     if (globals.User.isLogin == true) {
       helper = EventsHelper();
       initialize();
       super.initState();
     }
+  }
+
+  //Asynchronous method which awaits to get Events
+  //Future represents the result of an asynchronous operation
+  Future initialize() async {
+    events = await helper.getEvents();
+    //notifies the widget that the state is changing
+    setState(() {
+      eventsCount = events.length;
+      events = events;
+    });
   }
 
   @override
@@ -49,9 +71,13 @@ class _HomePageState extends State<HomePage> {
     if (MediaQuery.of(context).size.width < 600) {
       isSmall = true;
     }
+    //navigation if logged for various roles
+    //admin, organiser, subscriber
     if (globals.User.isLogin == true) {
+      //navigation related to organiser
       if (globals.User.isOrganiser == true) {
         return Scaffold(
+            //Build the navigation bar
             appBar: AppBar(
               title: Text('Student Selector'),
               actions: <Widget>[
@@ -109,31 +135,47 @@ class _HomePageState extends State<HomePage> {
                 child: Column(children: [
               Padding(
                 padding: EdgeInsets.all(20),
-                // child: Row(children: [
-                //   Text('Search Events'),
-                //   Container(
-                //       padding: EdgeInsets.all(20),
-                //       width: 200,
-                //       child: TextField(
-                //         controller: txtSearchController,
-                //         keyboardType: TextInputType.text,
-                //         textInputAction: TextInputAction.search,
-                //         onSubmitted: (text) {
-                //           helper.getEvents().then((value) {
-                //             events = value;
-                //             setState(() {
-                //               events = events;
-                //             });
-                //           });
-                //         },
-                //       )),
-                //   Container(
-                //       padding: EdgeInsets.all(20),
-                //       child: IconButton(
-                //           icon: Icon(Icons.search),
-                //           onPressed: () =>
-                //               helper.getEvents())),
-                // ]),
+              ),
+              Padding(
+                  padding: EdgeInsets.all(20),
+                  child: (isSmall)
+                  //depending on the screen size display a list or a table
+                      ? EventsList(events, false)
+                      : EventsTable(events, false)),
+            ])));
+      }
+      //navigation related to admin
+      else if (globals.User.isAdmin == true) {
+        return Scaffold(
+            appBar: AppBar(
+              title: Text('Student Selector'),
+              actions: <Widget>[
+                InkWell(
+                  child: Padding(
+                      padding: EdgeInsets.all(20.0),
+                      child:
+                          (isSmall) ? Icon(Icons.create) : Text('Create User')),
+                  onTap: () {
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => CreateUserScreen()));
+                  },
+                ),
+                InkWell(
+                  child: Padding(
+                      padding: EdgeInsets.all(20.0),
+                      child: (isSmall)
+                          ? Icon(Icons.home)
+                          : Text(
+                              "Logged in as: " + globals.User.globalUsername)),
+                ),
+              ],
+            ),
+            body: SingleChildScrollView(
+                child: Column(children: [
+              Padding(
+                padding: EdgeInsets.all(20),
               ),
               Padding(
                   padding: EdgeInsets.all(20),
@@ -141,7 +183,9 @@ class _HomePageState extends State<HomePage> {
                       ? EventsList(events, false)
                       : EventsTable(events, false)),
             ])));
-      } else {
+      }
+      //navigation related to subscriber
+      else {
         return Scaffold(
             appBar: AppBar(title: Text('Student Selector'), actions: <Widget>[
               InkWell(
@@ -172,31 +216,6 @@ class _HomePageState extends State<HomePage> {
                 child: Column(children: [
               Padding(
                 padding: EdgeInsets.all(20),
-                // child: Row(children: [
-                //   Text('Search Events'),
-                //   Container(
-                //       padding: EdgeInsets.all(20),
-                //       width: 200,
-                //       child: TextField(
-                //         controller: txtSearchController,
-                //         keyboardType: TextInputType.text,
-                //         textInputAction: TextInputAction.search,
-                //         onSubmitted: (text) {
-                //           helper.getEvents().then((value) {
-                //             events = value;
-                //             setState(() {
-                //               events = events;
-                //             });
-                //           });
-                //         },
-                //       )),
-                //   Container(
-                //       padding: EdgeInsets.all(20),
-                //       child: IconButton(
-                //           icon: Icon(Icons.search),
-                //           onPressed: () =>
-                //               helper.getEvents())),
-                // ]),
               ),
               Padding(
                   padding: EdgeInsets.all(20),
@@ -205,7 +224,9 @@ class _HomePageState extends State<HomePage> {
                       : EventsTable(events, false)),
             ])));
       }
-    } else {
+    }
+    //navigation if not logged in
+    else {
       return Scaffold(
           appBar: AppBar(
             title: Text('Student Selector'),
@@ -215,35 +236,6 @@ class _HomePageState extends State<HomePage> {
                     padding: EdgeInsets.all(20.0),
                     child: (isSmall) ? Icon(Icons.home) : Text('Home')),
               ),
-              // InkWell(
-              //   child: Padding(
-              //       padding: EdgeInsets.all(20.0),
-              //       child: (isSmall) ? Icon(Icons.add_circle) : Text('Subscribed')),
-              //   onTap: () {
-              //     Navigator.push(context,
-              //         MaterialPageRoute(builder: (context) => SubscribedTo()));
-              //   },
-              // ),
-
-              //   InkWell(
-              //   child: Padding(
-              //       padding: EdgeInsets.all(20.0),
-              //       child: (isSmall) ? Icon(Icons.add_circle) : Text('Organised')),
-              //   onTap: () {
-              //     Navigator.push(context,
-              //         MaterialPageRoute(builder: (context) => Organised()));
-              //   },
-              // ),
-
-              // InkWell(
-              //   child: Padding(
-              //       padding: EdgeInsets.all(20.0),
-              //       child: (isSmall) ? Icon(Icons.create) : Text('Create')),
-              //       onTap: () {
-
-              //         Navigator.push(context, MaterialPageRoute(builder: (context) => CreateScreen()));
-              //   },
-              // ),
               InkWell(
                 child: Padding(
                     padding: EdgeInsets.all(20.0),
@@ -261,45 +253,9 @@ class _HomePageState extends State<HomePage> {
               padding: EdgeInsets.all(20),
               child: Row(children: [
                 Text('Welcome to Student Selector. Login to view Events'),
-                //       Container(
-                //           padding: EdgeInsets.all(20),
-                //           width: 200,
-                //           child: TextField(
-                //             controller: txtSearchController,
-                //             keyboardType: TextInputType.text,
-                //             textInputAction: TextInputAction.search,
-                //             onSubmitted: (text) {
-                //               helper.getEvents().then((value) {
-                //                 events = value;
-                //                 setState(() {
-                //                   events = events;
-                //                 });
-                //               });
-                //             },
-                //           )),
-                //       Container(
-                //           padding: EdgeInsets.all(20),
-                //           child: IconButton(
-                //               icon: Icon(Icons.search),
-                //               onPressed: () =>
-                //                   helper.getEvents())),
               ]),
             ),
-            //   Padding(
-            //       padding: EdgeInsets.all(20),
-            //       child: (isSmall)
-            //            ? EventsList(events, false )
-            //           : EventsTable(events, false)),
           ])));
     }
   }
-
-  Future initialize() async {
-    events = await helper.getEvents();
-    setState(() {
-      eventsCount = events.length;
-      events = events;
-    });
-  }
-
 }

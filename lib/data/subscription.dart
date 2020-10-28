@@ -1,7 +1,10 @@
+///model class for Subscription
+
 class  Subscription {
      
      String username;
-     int eventID;
+     int weight;
      static int globalEventID;
-Subscription(this.username, this.eventID);
+     static String globalWeight;
+Subscription(this.username, this.weight);
 }
